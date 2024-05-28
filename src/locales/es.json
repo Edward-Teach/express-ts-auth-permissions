@@ -1,0 +1,28 @@
+{
+  "auth": {
+    "mfaRequired": "Se requiere MFA",
+    "passwordExpired": "La contraseña ha caducado: crea una nueva contraseña"
+  },
+  "genericError": "Error genérico",
+  "mfa": {
+    "activated": "MFA activado con éxito",
+    "alreadyActivated": "MFA ya activado",
+    "alreadyDeactivated": "MFA ya desactivado",
+    "deactivated": "MFA desactivado con éxito",
+    "errorDeactivation": "Error durante la desactivación del MFA",
+    "qrCodeError": "Error durante la activación del MFA",
+    "wrongCode": "Código de confirmación incorrecto"
+  },
+  "userCreated": "Usuario creado con éxito",
+  "userNotFound": "Error del servidor: usuario no encontrado",
+  "usernameAlreadyTaken": "Nombre de usuario o correo electrónico ya en uso",
+  "verification": {
+    "confirmed": "Correo electrónico verificado con éxito",
+    "email": "Confirmación de cuenta",
+    "emailHasBeenSent": "Te hemos enviado un correo electrónico de confirmación. Revisa tu correo y ingresa el código que recibiste",
+    "emailNotVerified": "Este correo electrónico no ha sido verificado aún.",
+    "tooManyAttempts": "Demasiados correos enviados: inténtalo más tarde. Verifica si la dirección de correo electrónico es correcta o si el correo electrónico ha sido movido a la carpeta de spam.",
+    "wrongCode": "Código de confirmación incorrecto"
+  },
+  "wrongCredentials": "Credenciales incorrectas"
+}

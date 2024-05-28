@@ -1,15 +1,28 @@
 {
-	"wrongCredentials": "DE Credenziali errate",
-	"userNotFound": "DE Errore del server: utente non trovato",
-	"emailNotVerified": "DE Email non ancora verificata. Controlla la tua email e inserisci il codice che ti abbiamo inviato",
-	"userCreated": "userCreated",
-	"passwordExpired": "passwordExpired",
-	"usernameAlreadyTaken": "usernameAlreadyTaken",
+	"auth": {
+		"mfaRequired": "MFA ist erforderlich",
+		"passwordExpired": "Passwort ist abgelaufen: Erstelle ein neues Passwort"
+	},
+	"genericError": "Allgemeiner Fehler",
+	"mfa": {
+		"activated": "MFA erfolgreich aktiviert",
+		"alreadyActivated": "MFA bereits aktiviert",
+		"alreadyDeactivated": "MFA bereits deaktiviert",
+		"deactivated": "MFA erfolgreich deaktiviert",
+		"errorDeactivation": "Fehler bei der Deaktivierung der MFA",
+		"qrCodeError": "Fehler bei der MFA-Aktivierung",
+		"wrongCode": "Falscher Bestätigungscode"
+	},
+	"userCreated": "Benutzer erfolgreich erstellt",
+	"userNotFound": "Serverfehler: Benutzer nicht gefunden",
+	"usernameAlreadyTaken": "Benutzername oder E-Mail bereits vergeben",
 	"verification": {
-		"emailHasBeenSent": "verification.emailHasBeenSent",
-		"tooManyAttempts": "verification.tooManyAttempts",
-		"emailNotVerified": "verification.emailNotVerified",
-		"wrongCode": "verification.wrongCode",
-		"confirmed": "verification.confirmed"
-	}
+		"confirmed": "E-Mail erfolgreich verifiziert",
+		"email": "Kontobestätigung",
+		"emailHasBeenSent": "Wir haben Ihnen eine Bestätigungs-E-Mail geschickt. Überprüfen Sie Ihre E-Mail und geben Sie den erhaltenen Code ein",
+		"emailNotVerified": "Diese E-Mail wurde noch nicht verifiziert.",
+		"tooManyAttempts": "Zu viele E-Mails gesendet: Versuchen Sie es später noch einmal. Überprüfen Sie, ob die E-Mail-Adresse korrekt ist oder ob die E-Mail in den Spam-Ordner verschoben wurde.",
+		"wrongCode": "Falscher Bestätigungscode"
+	},
+	"wrongCredentials": "Falsche Anmeldedaten"
 }

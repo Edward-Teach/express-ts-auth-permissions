@@ -75,6 +75,11 @@ export const authRoutes = (router: any, passport: any) => {
         AuthController.verifyMfa
     );
 
-// TODO LOGOUT
+    router.post(
+        '/removeMfa',
+        passport.authenticate('jwt', { session: false }),
+        AuthController.removeMfa
+    );
+
     return router;
 }

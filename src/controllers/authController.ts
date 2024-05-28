@@ -490,7 +490,6 @@ export class AuthController extends Controller {
      * If the tokens do not match, an error response is sent.
      */
     static verifyMfa = async (req: any, res: any) => {
-        console.log('key is', req.body.key);
         const cachedKeyMfa = await RedisCache.get(req.body.key)
         if ( !cachedKeyMfa ) {
             return res.status(400).send({ message: i18n.__('wrongCredentials'), code: 'WRONG_CHALLENGE' });
@@ -517,7 +516,27 @@ export class AuthController extends Controller {
         return res.status(400).send({ message: i18n.__('wrongCredentials'), code: 'WRONG_CHALLENGE-E' });
     }
 
-    // TODO REMOVE MFA
+    /**
+     * Removes the Multi-Factor Authentication (MFA) secret from the user's account.
+     *
+     * @param req - The request object containing the authenticated user's data.
+     * @param res - The response object to send the response back to the client.
+     *
+     * @returns A response object with a status code of 200 and a success message if the MFA is successfully deactivated.
+     *
+     * @remarks
+     * This function sets the user's MFA secret to null and saves the user's data in the database.
+     * It then sends a response with a success message.
+     */
+    static removeMfa = async (req: any, res: any) => {
+        if(!req.user.mfaSecret){
+            return res.status(400).send({ message: i18n.__('mfa.alreadyDeactivated'), code: 'MFA_ALREADY_DEACTIVATED' });
+        }
+        req.user.mfaSecret = null;
+        req.user.save();
+        return res.status(200).send({ message: i18n.__('mfa.deactivated')});
+    }
+
 
     //  ------------------------------------------ PRIVATE ------------------------------------------
     /**

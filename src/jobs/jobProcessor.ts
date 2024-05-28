@@ -1,5 +1,5 @@
-import {JobScheduler} from "./jobScheduler";
-import {sendVerificationEmailJob} from "./sendVerificationEmailJob";
+import { JobScheduler } from "./jobScheduler";
+import { sendVerificationEmailJob } from "./sendVerificationEmailJob";
 
 
 export class JobProcessor {
@@ -12,18 +12,31 @@ export class JobProcessor {
         this.startProcessing();
     }
 
+    /**
+     * Processes due jobs from the job scheduler.
+     *
+     * @remarks
+     * This method retrieves due jobs from the job scheduler, processes them, and removes them from the queue.
+     * The processing of each job is based on its type, and the corresponding job function is called.
+     *
+     * @returns {Promise<void>} - A promise that resolves when all due jobs have been processed and removed.
+     */
     private async processJobs(): Promise<void> {
+        // Retrieve due jobs from the job scheduler
         const dueJobs = await this.jobScheduler.getDueJobs();
-        for (const job of dueJobs) {
-            // Process the job
-            console.info(`Processing job ${job.id}`);
-            switch (job.type){
-                case 'sendVerificationEmailJob':
-                    await sendVerificationEmailJob(job.payload)
-                    break
+
+        // Process each due job
+        for ( const job of dueJobs ) {
+            // Determine the type of job and process it accordingly
+            switch ( job.type ) {
+                case 'endVerificationEmailJob':
+                    // Call the sendVerificationEmailJob function with the job payload
+                    await sendVerificationEmailJob(job.payload);
+                    break;
+                // Add more cases for other job types as needed
             }
 
-            // Remove job from the queue
+            // Remove the processed job from the job scheduler
             await this.jobScheduler.removeJob(job);
         }
     }

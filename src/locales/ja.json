@@ -1,0 +1,28 @@
+{
+  "auth": {
+    "mfaRequired": "MFAが必要です",
+    "passwordExpired": "パスワードの有効期限が切れています: 新しいパスワードを作成してください"
+  },
+  "genericError": "一般的なエラー",
+  "mfa": {
+    "activated": "MFAが正常に有効化されました",
+    "alreadyActivated": "MFAはすでに有効化されています",
+    "alreadyDeactivated": "MFAはすでに無効化されています",
+    "deactivated": "MFAが正常に無効化されました",
+    "errorDeactivation": "MFAの無効化中にエラーが発生しました",
+    "qrCodeError": "MFAの有効化中にエラーが発生しました",
+    "wrongCode": "確認コードが間違っています"
+  },
+  "userCreated": "ユーザーが正常に作成されました",
+  "userNotFound": "サーバーエラー: ユーザーが見つかりません",
+  "usernameAlreadyTaken": "ユーザー名またはメールアドレスはすでに使用されています",
+  "verification": {
+    "confirmed": "メールが正常に確認されました",
+    "email": "アカウント確認",
+    "emailHasBeenSent": "確認メールを送信しました。メールを確認し、受け取ったコードを入力してください",
+    "emailNotVerified": "このメールはまだ確認されていません。",
+    "tooManyAttempts": "送信されたメールが多すぎます: 後でもう一度試してください。メールアドレスが正しいか、メールが迷惑メールフォルダに移動されていないか確認してください。",
+    "wrongCode": "確認コードが間違っています"
+  },
+  "wrongCredentials": "資格情報が間違っています"
+}

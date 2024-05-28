@@ -56,8 +56,8 @@ export const sendVerificationEmailJob = async (payload: any) => {
 
         const command = new SendEmailCommand(params);
         const data = await sesClient.send(command);
-        console.log("Email sent successfully", data);
+        console.info("Email sent successfully", data);
     } catch (err) {
-        console.log("Error sending email", err);
+        console.error("Error sending email", err);
     }
 }

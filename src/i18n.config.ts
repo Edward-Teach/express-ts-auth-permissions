@@ -22,7 +22,7 @@ listFilesInDirectory(localeDir);
 export function initializeI18n() {
     return new I18n({
         autoReload: true,
-        locales: ['en', 'de', 'it'],
+        locales: ['en', 'de', 'it', 'ru', 'ja', 'es', 'ru', 'cn'],
         header: 'Accept-Language',
         defaultLocale: 'en',
         directory: localeDir,

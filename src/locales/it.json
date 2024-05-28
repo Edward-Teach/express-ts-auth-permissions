@@ -1,27 +1,28 @@
 {
-  "wrongCredentials": "Credenziali errate",
-  "userNotFound": "Errore del server: utente non trovato",
-  "usernameAlreadyTaken": "Username oppure email già in uso",
-  "genericError": "Errore generico",
-  "userCreated": "Utente creato con successo",
   "auth": {
     "mfaRequired": "MFA is required",
     "passwordExpired": "La password è scaduta: crea una nuova password"
   },
-  "verification": {
-    "email": "Conferma account",
-    "tooManyAttempts": "Troppe emails inviate: riprova più tardi. Controlla se l'indirizzo di posta è corretto oppure se l'email è stata spostata nella cartella spam.",
-    "emailNotVerified": "Questa email non è ancora stata verificata.",
-    "emailHasBeenSent": "Ti abbiamo inviato un email di conferma. Controlla la tua email e inserisci il codice che ti è arrivato",
-    "wrongCode": "Codice di conferma errato",
-    "confirmed": "Email verificata con successo"
-  },
+  "genericError": "Errore generico",
   "mfa": {
-    "qrCodeError": "Errore durante l'attivazione del MFA",
     "activated": "MFA attivato con successo",
-    "errorDeactivation": "Errore durante la disattivazione del MFA",
+    "alreadyActivated": "MFA già attivato",
+    "alreadyDeactivated": "MFA già disattivato",
     "deactivated": "MFA disattivato con successo",
-    "wrongCode": "Codice di conferma errato",
-    "alreadyActivated": "MFA già attivato"
-  }
+    "errorDeactivation": "Errore durante la disattivazione del MFA",
+    "qrCodeError": "Errore durante l'attivazione del MFA",
+    "wrongCode": "Codice di conferma errato"
+  },
+  "userCreated": "Utente creato con successo",
+  "userNotFound": "Errore del server: utente non trovato",
+  "usernameAlreadyTaken": "Username oppure email già in uso",
+  "verification": {
+    "confirmed": "Email verificata con successo",
+    "email": "Conferma account",
+    "emailHasBeenSent": "Ti abbiamo inviato un email di conferma. Controlla la tua email e inserisci il codice che ti è arrivato",
+    "emailNotVerified": "Questa email non è ancora stata verificata.",
+    "tooManyAttempts": "Troppe emails inviate: riprova più tardi. Controlla se l'indirizzo di posta è corretto oppure se l'email è stata spostata nella cartella spam.",
+    "wrongCode": "Codice di conferma errato"
+  },
+  "wrongCredentials": "Credenziali errate"
 }

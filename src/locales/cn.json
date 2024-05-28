@@ -1,0 +1,28 @@
+{
+  "auth": {
+    "mfaRequired": "需要多因素认证 (MFA)",
+    "passwordExpired": "密码已过期：请创建一个新密码"
+  },
+  "genericError": "通用错误",
+  "mfa": {
+    "activated": "MFA 成功激活",
+    "alreadyActivated": "MFA 已激活",
+    "alreadyDeactivated": "MFA 已停用",
+    "deactivated": "MFA 成功停用",
+    "errorDeactivation": "停用 MFA 时出错",
+    "qrCodeError": "激活 MFA 时出错",
+    "wrongCode": "确认码错误"
+  },
+  "userCreated": "用户创建成功",
+  "userNotFound": "服务器错误：未找到用户",
+  "usernameAlreadyTaken": "用户名或电子邮件已被使用",
+  "verification": {
+    "confirmed": "电子邮件验证成功",
+    "email": "账户确认",
+    "emailHasBeenSent": "我们已向您发送了一封确认电子邮件。请检查您的电子邮件并输入收到的代码",
+    "emailNotVerified": "此电子邮件尚未验证。",
+    "tooManyAttempts": "发送的电子邮件太多：请稍后重试。检查电子邮件地址是否正确或电子邮件是否已移至垃圾邮件文件夹。",
+    "wrongCode": "确认码错误"
+  },
+  "wrongCredentials": "凭证错误"
+}
