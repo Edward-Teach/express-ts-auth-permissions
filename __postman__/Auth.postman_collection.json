@@ -1,0 +1,408 @@
+{
+	"info": {
+		"_postman_id": "c6df09a4-1224-4882-887b-79900822b606",
+		"name": "Auth",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "26119349"
+	},
+	"item": [
+		{
+			"name": "profile",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{url}}/profile",
+					"host": [
+						"{{url}}"
+					],
+					"path": [
+						"profile"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "login",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"var CryptoJS = require(\"crypto-js\");\r",
+							"const {iv, challenge, key, verifier} = pm.response.json();\r",
+							"if(!iv || !challenge || !key || !verifier) return;\r",
+							"// retrieve password from the form\r",
+							"const password = pm.environment.get(\"user.password\");\r",
+							"const code  = CryptoJS.AES.decrypt(verifier, password).toString(CryptoJS.enc.Utf8)\r",
+							"\r",
+							"\r",
+							"const eIv = CryptoJS.enc.Hex.parse(iv); // Convert IV from hex string to CryptoJS format\r",
+							"const eKey = CryptoJS.enc.Hex.parse(CryptoJS.SHA256(code).toString()); \r",
+							"\r",
+							"const response = CryptoJS.AES.encrypt(\r",
+							"    challenge,\r",
+							"    eKey,\r",
+							"    {\r",
+							"        mode: CryptoJS.mode.CBC,\r",
+							"        padding: CryptoJS.pad.Pkcs7,\r",
+							"        iv: eIv\r",
+							"    }\r",
+							").toString()\r",
+							"\r",
+							"\r",
+							"const body = JSON.stringify({\r",
+							"    key,\r",
+							"    response,\r",
+							"});\r",
+							"\r",
+							"const base_url = pm.environment.get(\"url\");\r",
+							"const lang = pm.globals.get(\"lang\");\r",
+							"console.log('verify challenge, lang is', lang)\r",
+							"pm.sendRequest({\r",
+							"    url: base_url + \"/auth/verifyChallenge\",\r",
+							"    header: {\r",
+							"        'Content-Type': 'application/json',\r",
+							"        'Accept-Language': lang\r",
+							"    },\r",
+							"    method: 'POST',\r",
+							"    body\r",
+							"}, function (err, response) {\r",
+							"    if(err) {\r",
+							"        console.log('Verify challenge error is', err)\r",
+							"    } else {\r",
+							"        const rjson = response.json();\r",
+							"        if(rjson.code === 'MFA_REQUIRED'){\r",
+							"            const mfaToken = pm.environment.get(\"mfa-token\");\r",
+							"            console.log('rjson is', rjson.key, mfaToken)\r",
+							"            pm.sendRequest({\r",
+							"                url: base_url + \"/auth/verifyMFA\",\r",
+							"                header: {\r",
+							"                    'Content-Type': 'application/json',\r",
+							"                    'Accept-Language': lang\r",
+							"                },\r",
+							"                method: 'POST',\r",
+							"                body:  JSON.stringify({\r",
+							"                    key: rjson.key,\r",
+							"                    token: mfaToken\r",
+							"                })\r",
+							"            }, function (err2, response2) {\r",
+							"                if(err2) {\r",
+							"                    console.log('MFA confirmation error is', err2)\r",
+							"                } else {\r",
+							"                    const rjson2 = response2.json();\r",
+							"                    console.log('MFA confirmation success', rjson2)\r",
+							"                    pm.environment.set(\"token\", rjson2.token);\r",
+							"                }\r",
+							"            });\r",
+							"\r",
+							"\r",
+							"        } else {\r",
+							"            console.log('Verify challenge success', rjson)\r",
+							"            pm.environment.set(\"token\", rjson.token);\r",
+							"        }\r",
+							"    }\r",
+							"});\r",
+							"\r",
+							"\r",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Accept-Language",
+						"value": "{{lang}}"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"username\": \"{{user.email}}\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}/auth/initLogin",
+					"host": [
+						"{{url}}"
+					],
+					"path": [
+						"auth",
+						"initLogin"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "register",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"var CryptoJS = require(\"crypto-js\");\r",
+							"\r",
+							"eval( pm.globals.get('pmlib_code') )\r",
+							"var jsonData = pm.response.json();\r",
+							"if(!jsonData.publicKey) {\r",
+							"    console.error(jsonData)\r",
+							"    return;\r",
+							"}\r",
+							"\r",
+							"\r",
+							"// TODO retrieve password from the form\r",
+							"const password = pm.environment.get(\"user.password\");\r",
+							"console.log('complete registration:: REMEMBER TO GET PW FROM FORM')\r",
+							"\r",
+							"\r",
+							"//const publicKey = jsonData.publicKey\r",
+							"const randomStringToCrypt = jsonData.randomStringToCrypt;\r",
+							"console.info('save this for testing: randomStringToCrypt', randomStringToCrypt)\r",
+							"\r",
+							"\r",
+							"const text = CryptoJS.AES.encrypt(\r",
+							"    randomStringToCrypt,\r",
+							"    password\r",
+							").toString()\r",
+							"\r",
+							"const publicKey = pmlib.rs.KEYUTIL.getKey(jsonData.publicKey);\r",
+							"console.log('public key done')\r",
+							"\r",
+							"const len3 = text.length / 3;\r",
+							"const substrings = [\r",
+							"    text.substring(0, len3),\r",
+							"    text.substring(len3, 2*len3),\r",
+							"    text.substring(2*len3)\r",
+							"]\r",
+							"\r",
+							"const chunks = [];\r",
+							"for(let k = 0; k < substrings.length; k+=1){\r",
+							"    const ers = pmlib.rs.KJUR.crypto.Cipher.encrypt(substrings[k], publicKey, 'RSAOAEP');\r",
+							"    const ers64 = Buffer.from(ers, 'hex').toString('base64');\r",
+							"    chunks.push(ers64)\r",
+							"}\r",
+							"\r",
+							"\r",
+							"const body = {\r",
+							"    key: jsonData.cacheKey,\r",
+							"    chunks\r",
+							"};\r",
+							"\r",
+							"const base_url = pm.environment.get(\"url\");\r",
+							"pm.sendRequest({\r",
+							"    url: base_url + \"/auth/completeRegistration\",\r",
+							"    method: 'POST',\r",
+							"    header: {\r",
+							"        'Content-Type': 'application/json'\r",
+							"    },\r",
+							"    body: {\r",
+							"        mode: 'raw',\r",
+							"        raw: JSON.stringify(body)\r",
+							"    }\r",
+							"}, function (err, response) {\r",
+							"    if(err) {\r",
+							"        console.log('error is', err)\r",
+							"    } else {\r",
+							"        console.log('verify response', response.json());\r",
+							"    }\r",
+							"});\r",
+							"    \r",
+							"\r",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Accept-Language",
+						"value": "{{lang}}"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"name\": \"{{user.name}}\",\r\n    \"email\": \"{{user.email}}\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}/auth/register",
+					"host": [
+						"{{url}}"
+					],
+					"path": [
+						"auth",
+						"register"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "sendVerificationEmail",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Accept-Language",
+						"value": "{{lang}}"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"email\": \"gianluca.bragazzi0101@gmail.com\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}/auth/sendVerificationEmail",
+					"host": [
+						"{{url}}"
+					],
+					"path": [
+						"auth",
+						"sendVerificationEmail"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "verifyEmail",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Accept-Language",
+						"value": "{{lang}}"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"email\": \"gianluca.bragazzi0101@gmail.com\",\r\n    \"code\": \"iSZcVG\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}/auth/verifyEmail",
+					"host": [
+						"{{url}}"
+					],
+					"path": [
+						"auth",
+						"verifyEmail"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "askMfaActivation",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"url": {
+					"raw": "{{url}}/auth/askMfaActivation",
+					"host": [
+						"{{url}}"
+					],
+					"path": [
+						"auth",
+						"askMfaActivation"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "confirmMfaActivation",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"token\": \"579018\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{url}}/auth/confirmMfaActivation",
+					"host": [
+						"{{url}}"
+					],
+					"path": [
+						"auth",
+						"confirmMfaActivation"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

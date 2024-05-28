@@ -1,0 +1,19 @@
+{
+	"wrongCredentials": "Wrong credentials",
+	"userNotFound": "Internal Server Error: user not found",
+	"emailNotVerified": "Email not verified yet. Please check your email and insert the code we provided to you.",
+	"userCreated": "userCreated",
+	"passwordExpired": "The password has expired. Please change your password.",
+	"usernameAlreadyTaken": "usernameAlreadyTaken",
+	"verification": {
+		"emailHasBeenSent": "verification.emailHasBeenSent",
+		"tooManyAttempts": "verification.tooManyAttempts",
+		"emailNotVerified": "verification.emailNotVerified",
+		"wrongCode": "verification.wrongCode",
+		"confirmed": "verification.confirmed"
+	},
+	"mfa": {
+		"qrCodeError": "mfa.qrCodeError",
+		"activated": "mfa.activated"
+	}
+}

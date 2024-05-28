@@ -1,0 +1,15 @@
+{
+	"wrongCredentials": "DE Credenziali errate",
+	"userNotFound": "DE Errore del server: utente non trovato",
+	"emailNotVerified": "DE Email non ancora verificata. Controlla la tua email e inserisci il codice che ti abbiamo inviato",
+	"userCreated": "userCreated",
+	"passwordExpired": "passwordExpired",
+	"usernameAlreadyTaken": "usernameAlreadyTaken",
+	"verification": {
+		"emailHasBeenSent": "verification.emailHasBeenSent",
+		"tooManyAttempts": "verification.tooManyAttempts",
+		"emailNotVerified": "verification.emailNotVerified",
+		"wrongCode": "verification.wrongCode",
+		"confirmed": "verification.confirmed"
+	}
+}
