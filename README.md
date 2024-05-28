@@ -44,3 +44,21 @@ to remove the containers and volumes:
 ```sh
 docker-compose down -v
 ```
+
+
+
+
+
+## ENV SETUP
+```sh
+REDIS_URL='redis://redis:6379' #local
+DB_NAME='mydatabase' #local
+DB_USER='myuser'  #local
+DB_PASSWORD='mypassword'  #local
+DB_HOST='mysql'  #local
+AWS_ACCESS_KEY_ID='your aws access key ID'
+AWS_SECRET_ACCESS_KEY='your aws secret'
+JWT_SECRET='random string. keep it private!!'
+APP_NAME='your app name'
+APP_EMAIL_ADDRESS="your email address like support@mysite dot com"
+```
