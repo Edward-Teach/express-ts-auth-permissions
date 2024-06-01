@@ -1,9 +1,10 @@
 import {validationResult} from 'express-validator';
+import { Request, Response } from "express";
 
 
 export class Controller {
 
-    static withValidation = (req: any, res: any, next: any) => {
+    static withValidation = (req: Request, res: Response, next: any) => {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
             // Format and send custom error messages

@@ -1,9 +1,11 @@
 // config/passportConfig.ts
 import passport from 'passport';
-import { Strategy as JwtStrategy, ExtractJwt } from 'passport-jwt';
+import { ExtractJwt, Strategy as JwtStrategy } from 'passport-jwt';
 import { User } from "./models/User";
 import * as dotenv from "dotenv";
 import RedisCache from "./cache/redisCache";
+import { Role } from "./models/Role";
+import { Permission } from "./models/Permission";
 
 dotenv.config();
 
@@ -22,20 +24,27 @@ const initializePassport = () => {
         new JwtStrategy(opts, async (jwt_payload, done) => {
             console.log('jwt_payload', jwt_payload)
             try {
-
                 const cachedUser = await RedisCache.get(`user:${jwt_payload.id}`);
                 if ( cachedUser ) {
                     return done(null, JSON.parse(cachedUser));
                 }
-
-                // TODO PERMISSIONS AND CACHE
-                // TODO update permissions or role => remember to clear the cache
-                // Also fire an event "roleOrPermissionUpdated"
-                // => this could trigger a websocket or similar strategy to update the user's permissions client-side'
-
-                const user = await User.findByPk(jwt_payload.id);
+                const user: any = (await User.findByPk(jwt_payload.id, {
+                    include: [
+                        {
+                            model: Role
+                        },
+                        {
+                            model: Permission
+                        }
+                    ]
+                }))?.dataValues;
                 if ( user ) {
-                    await RedisCache.set(`user:${jwt_payload.id}`, JSON.stringify(user), 60*10); // Cache for 10 minutes
+                    const userPermissions = user.permissions.map((p: any) => p.dataValues.name);
+                    const userRoles = user.roles.map((p: any) => p.dataValues.name);
+                    const rolePermissions = user.roles.flatMap((p: any) => p.dataValues.permissions.map((p: any) => p.dataValues.name));
+                    user.permissions = Array.from(new Set([...userPermissions, ...rolePermissions]))
+                    user.roles = userRoles;
+                    await RedisCache.set(`user:${jwt_payload.id}`, JSON.stringify(user), 60 * 10); // Cache for 10 minutes
                     return done(null, user);
                 } else {
                     return done(null, false);

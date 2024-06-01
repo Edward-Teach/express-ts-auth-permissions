@@ -1,15 +1,17 @@
 import * as dotenv from 'dotenv';
-import express, {Express} from 'express';
+import express, { Express, Response } from 'express';
 import RedisCache from "./cache/redisCache";
 import Database from "./database/database";
 import './listeners/userListener';
-import {JobScheduler} from "./jobs/jobScheduler";
-import {JobProcessor} from "./jobs/jobProcessor"; // Import the listener to register it
-import {initializeI18n} from "./i18n.config";
-import {getAWSCredentials, initializeSESClient} from "./aws.config";
-import {createRateLimiter} from "./rateLimit.config";
+import { JobScheduler } from "./jobs/jobScheduler";
+import { JobProcessor } from "./jobs/jobProcessor"; // Import the listener to register it
+import { initializeI18n } from "./i18n.config";
+import { getAWSCredentials, initializeSESClient } from "./aws.config";
+import { createRateLimiter } from "./rateLimit.config";
 import initializePassport from "./passport.config";
 import { authRoutes } from "./routes/auth";
+import { checkPermissionMiddleware } from "./middlewares/checkPermission.middleware";
+import { roleRoutes } from "./routes/role";
 
 dotenv.config();
 
@@ -35,20 +37,27 @@ const router = express.Router();
     app.use(limiter)
     app.use(passport.initialize());
 
-    app.use((req, res, next) => {
+    app.use((req: any, res: Response, next) => {
         const lang = req.headers['accept-language'];
-        if (lang) {
+        if ( lang ) {
             i18n.setLocale(lang);
         }
         next();
     });
 
-    if(passport) {
+    if ( passport ) {
         const ar = authRoutes(router, passport);
         app.use('/auth', ar);
-        app.get('/profile', passport.authenticate('jwt', { session: false }), (req, res) => {
-            return res.status(200).send(req.user);
-        });
+        const r = roleRoutes(router, passport);
+        app.use('/roles', r);
+        app.get(
+            '/profile',
+            passport.authenticate('jwt', { session: false }),
+            checkPermissionMiddleware('test-permission-1'),
+            (req: any, res: Response) => {
+                console.log('get profile')
+                return res.status(200).send(req.user);
+            });
     }
 
 // Ensure the Redis client is closed when the process is terminated
@@ -69,8 +78,6 @@ const router = express.Router();
         console.error('Initialization error:', err);
         process.exit(1);
     });
-
-
 
 
 export const indexApp = app;

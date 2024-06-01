@@ -1,6 +1,10 @@
-import {Table, Column, Model, DataType, Unique} from 'sequelize-typescript';
+import { Table, Column, DataType, Unique, HasMany, BelongsToMany, Model } from 'sequelize-typescript';
 import {IUser} from "../interfaces/IUser";
-import { format, parseISO } from 'date-fns';
+import { format } from 'date-fns';
+import { UserRole } from "./UserRole";
+import { Role } from "./Role";
+import { UserPermission } from "./UserPermission";
+import { Permission } from "./Permission";
 
 /**
  * User model for Sequelize ORM.
@@ -17,7 +21,7 @@ import { format, parseISO } from 'date-fns';
 @Table({
     tableName: 'users'
 })
-export class User extends Model implements IUser {
+export class User extends Model<User> implements IUser {
     /**
      * Unique username of the user.
      *
@@ -100,7 +104,7 @@ export class User extends Model implements IUser {
         type: DataType.STRING,
         allowNull: true,
     })
-    declare mfaSecret: string;
+    declare mfaSecret: string|null;
 
     /**
      * Email verification date of the user.
@@ -138,6 +142,8 @@ export class User extends Model implements IUser {
      * @returns {object} - The user object with sensitive fields excluded.
      */
     toJSON(): object {
+        //return this.get();
+        const obj = this.get();
         const values : any = { };
         values.id = this.id;
         values.name = this.name;
@@ -145,6 +151,20 @@ export class User extends Model implements IUser {
         if (this.passwordExpiresAt) {
             values.passwordExpiresAt = format(this.passwordExpiresAt, 'yyyy-MM-dd HH:mm:ss');
         }
+        values.roles = obj.roles;
+        values.permissions = obj.permissions.map((p: Permission)=> p.name);
         return values;
     }
+
+    @HasMany(() => UserRole)
+    userRoles!: UserRole[];
+
+    @BelongsToMany(() => Role, () => UserRole)
+    roles!: Role[];
+
+    @HasMany(() => UserPermission)
+    userPermissions!: UserPermission[];
+
+    @BelongsToMany(() => Permission, () => UserPermission)
+    permissions!: Permission[];
 }

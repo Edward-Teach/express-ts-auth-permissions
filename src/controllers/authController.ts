@@ -12,6 +12,10 @@ import userCreatedEvent from "../events/userCreatedEvent";
 import jwt from 'jsonwebtoken';
 import speakeasy from 'speakeasy';
 import QRCode from 'qrcode';
+import { Role } from "../models/Role";
+import { Permission } from "../models/Permission";
+import { Response } from 'express';
+import { CustomRequest } from "../express";
 
 export class AuthController extends Controller {
 
@@ -29,7 +33,7 @@ export class AuthController extends Controller {
      * generates a challenge, and stores the user's ID, challenge, password, and IV in Redis.
      * The IV, challenge, and verifier are then sent back to the client.
      */
-    static initLogin = async (req: any, res: any) => {
+    static initLogin = async (req: CustomRequest, res: Response): Promise<Response> => {
 
         const key: string = `challenge-${randomstring.generate({
             charset: 'numeric',
@@ -96,7 +100,7 @@ export class AuthController extends Controller {
      * If the user has MFA enabled, a MFA required error message is returned.
      * If all checks pass, the user is returned in the response.
      */
-    static verifyChallenge = async (req: any, res: any) => {
+    static verifyChallenge = async (req: CustomRequest, res: Response): Promise<Response> => {
         try {
             const cachedChallenge = await RedisCache.get(req.body.key)
             if ( !cachedChallenge ) {
@@ -115,7 +119,15 @@ export class AuthController extends Controller {
                 const user: IUser | null = await User.findOne({
                     where: {
                         id: parsedCachedChallenge.id
-                    }
+                    },
+                    include: [
+                        {
+                            model: Role
+                        },
+                        {
+                            model: Permission
+                        }
+                    ]
                 });
                 if ( !user ) {
                     // SECURITY Do not remove or change the return message
@@ -179,7 +191,7 @@ export class AuthController extends Controller {
      * This function generates a cache key, creates an RSA key pair, and stores the user's name, email, private key, and random string to crypt in Redis.
      * The public key and random string to crypt are then sent back to the client.
      */
-    static initRegistration = async (req: any, res: any) => {
+    static initRegistration = async (req: CustomRequest, res: Response): Promise<Response> => {
 
         const name: string = this.sanitizeString(req.body.name);
         const email: string = this.sanitizeString(req.body.email);
@@ -257,7 +269,7 @@ export class AuthController extends Controller {
      *
      * @throws Will throw an error if the cache key is not found or the decryption fails.
      */
-    static completeRegistration = async (req: any, res: any) => {
+    static completeRegistration = async (req: CustomRequest, res: Response): Promise<Response> => {
         const key = `init-register--${req.body.key}`;
         const tempUserStr = await RedisCache.get(key)
         if ( !tempUserStr ) {
@@ -321,7 +333,7 @@ export class AuthController extends Controller {
      * A success response is sent.
      * If the codes do not match, an error response is sent.
      */
-    static verifyEmail = async (req: any, res: any) => {
+    static verifyEmail = async (req: CustomRequest, res: Response): Promise<Response> => {
         const user: User | null = await User.findOne({
             where: {
                 email: req.body.email
@@ -370,7 +382,7 @@ export class AuthController extends Controller {
      * If the code does not exist, the userCreatedEvent is emitted with the user's data.
      * A success response is sent.
      */
-    static sendVerificationEmail = async (req: any, res: any) => {
+    static sendVerificationEmail = async (req: CustomRequest, res: Response): Promise<Response> => {
         const user: IUser | null = await User.findOne({
             where: {
                 email: req.body.email
@@ -416,8 +428,8 @@ export class AuthController extends Controller {
      * If the QR code URL is successfully generated, it sends a JSON response with the QR code URL.
      * If there is an error generating the QR code, it sends a JSON response with an error message.
      */
-    static askMfaActivation = async (req: any, res: any) => {
-        if ( req.user.mfaSecret ) {
+    static askMfaActivation = async (req: CustomRequest, res: Response) => {
+        if ( req.user!.mfaSecret ) {
             return res.status(500).send({ message: i18n.__('mfa.alreadyActivated'), code: 'MFA_ALREADY_ACTIVATED' });
         }
         const secret = speakeasy.generateSecret({
@@ -430,7 +442,7 @@ export class AuthController extends Controller {
         if ( !otpauthUrl ) {
             return res.status(500).send({ message: i18n.__('mfa.qrCodeError'), code: 'OTPAUTH_ERROR' });
         }
-        const key = `mfa-code--${req.user.id}`;
+        const key = `mfa-code--${req.user!.id}`;
         await RedisCache.set(key, secret.base32, 60 * 10); // 10 minutes
         QRCode.toDataURL(otpauthUrl, (err: any, dataUrl: any) => {
             if ( err ) {
@@ -456,8 +468,8 @@ export class AuthController extends Controller {
      * A success response is sent.
      * If the tokens do not match, an error response is sent.
      */
-    static confirmMfaActivation = async (req: any, res: any) => {
-        const key = `mfa-code--${req.user.id}`;
+    static confirmMfaActivation = async (req: CustomRequest, res: Response): Promise<Response> => {
+        const key = `mfa-code--${req.user!.id}`;
         const code = await RedisCache.get(key);
         if ( code ) {
             const verified = speakeasy.totp.verify({
@@ -466,8 +478,8 @@ export class AuthController extends Controller {
                 token: req.body.token,
             });
             if ( verified ) {
-                req.user.mfaSecret = code;
-                await req.user.save();
+                req.user!.mfaSecret = code;
+                await req.user!.save();
                 return res.status(201).send({ message: i18n.__('mfa.activated'), code: 'MFA_ACTIVATED' });
             }
         }
@@ -489,7 +501,7 @@ export class AuthController extends Controller {
      * If the tokens match, the user's data is retrieved from the database using the stored ID, and the user's data is returned in the response.
      * If the tokens do not match, an error response is sent.
      */
-    static verifyMfa = async (req: any, res: any) => {
+    static verifyMfa = async (req: CustomRequest, res: Response): Promise<Response> => {
         const cachedKeyMfa = await RedisCache.get(req.body.key)
         if ( !cachedKeyMfa ) {
             return res.status(400).send({ message: i18n.__('wrongCredentials'), code: 'WRONG_CHALLENGE' });
@@ -498,7 +510,15 @@ export class AuthController extends Controller {
         const user: IUser | null = await User.findOne({
             where: {
                 id: parseInt(cachedKeyMfa)
-            }
+            },
+            include: [
+                {
+                    model: Role
+                },
+                {
+                    model: Permission
+                }
+            ]
         });
         if ( !user || !user.mfaSecret ) {
             // SECURITY Do not remove or change the return message
@@ -528,13 +548,16 @@ export class AuthController extends Controller {
      * This function sets the user's MFA secret to null and saves the user's data in the database.
      * It then sends a response with a success message.
      */
-    static removeMfa = async (req: any, res: any) => {
-        if(!req.user.mfaSecret){
-            return res.status(400).send({ message: i18n.__('mfa.alreadyDeactivated'), code: 'MFA_ALREADY_DEACTIVATED' });
+    static removeMfa = async (req: CustomRequest, res: Response): Promise<Response> => {
+        if ( !req.user || !req.user.mfaSecret ) {
+            return res.status(400).send({
+                message: i18n.__('mfa.alreadyDeactivated'),
+                code: 'MFA_ALREADY_DEACTIVATED'
+            });
         }
         req.user.mfaSecret = null;
         req.user.save();
-        return res.status(200).send({ message: i18n.__('mfa.deactivated')});
+        return res.status(200).send({ message: i18n.__('mfa.deactivated') });
     }
 
 
@@ -559,7 +582,7 @@ export class AuthController extends Controller {
      * The decrypted bytes are then converted to a UTF-8 string and returned.
      * If decryption fails, null is returned.
      */
-    private static decrypt = (encryptedText: string, password: string, iv: Buffer) => {
+    private static decrypt = (encryptedText: string, password: string, iv: Buffer): null | string => {
         const key = crypto.createHash('sha256').update(password).digest(); // Ensure key is 32 bytes for AES-256
         const encryptedBuffer = Buffer.from(encryptedText, 'base64'); // Convert from base64 to Buffer
         const decipher = crypto.createDecipheriv('aes-256-cbc', key, iv);
@@ -590,7 +613,7 @@ export class AuthController extends Controller {
      * This function signs the user's ID using the JWT_SECRET environment variable and returns the user's data and the signed token.
      * The token's expiration time is set based on the rememberMe flag in the request.
      */
-    private static returnAuthUser = async (req: any, res: any, user: IUser) => {
+    private static returnAuthUser = async (req: CustomRequest, res: Response, user: IUser): Promise<Response> => {
         if ( !user ) {
             return res.status(400).send({ message: i18n.__('wrongCredentials'), code: 'WRONG_CHALLENGE-E' });
         }
