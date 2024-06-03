@@ -12,6 +12,7 @@ import initializePassport from "./passport.config";
 import { authRoutes } from "./routes/auth";
 import { checkPermissionMiddleware } from "./middlewares/checkPermission.middleware";
 import { roleRoutes } from "./routes/role";
+import { permissionRoutes } from "./routes/permission";
 
 dotenv.config();
 
@@ -49,7 +50,10 @@ const router = express.Router();
         const ar = authRoutes(router, passport);
         app.use('/auth', ar);
         const r = roleRoutes(router, passport);
-        app.use('/roles', r);
+        app.use('/', r);
+        const p = permissionRoutes(router, passport)
+        app.use('/', p);
+
         app.get(
             '/profile',
             passport.authenticate('jwt', { session: false }),

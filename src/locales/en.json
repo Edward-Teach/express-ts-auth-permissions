@@ -1,28 +1,29 @@
 {
-  "auth": {
-    "mfaRequired": "MFA is required",
-    "passwordExpired": "Password has expired: create a new password"
-  },
-  "genericError": "Generic error",
-  "mfa": {
-    "activated": "MFA activated successfully",
-    "alreadyActivated": "MFA already activated",
-    "alreadyDeactivated": "MFA already deactivated",
-    "deactivated": "MFA deactivated successfully",
-    "errorDeactivation": "Error during MFA deactivation",
-    "qrCodeError": "Error during MFA activation",
-    "wrongCode": "Incorrect confirmation code"
-  },
-  "userCreated": "User created successfully",
-  "userNotFound": "Server error: user not found",
-  "usernameAlreadyTaken": "Username or email already in use",
-  "verification": {
-    "confirmed": "Email verified successfully",
-    "email": "Account confirmation",
-    "emailHasBeenSent": "We have sent you a confirmation email. Check your email and enter the code you received",
-    "emailNotVerified": "This email has not been verified yet.",
-    "tooManyAttempts": "Too many emails sent: try again later. Check if the email address is correct or if the email has been moved to the spam folder.",
-    "wrongCode": "Incorrect confirmation code"
-  },
-  "wrongCredentials": "Incorrect credentials"
+	"auth": {
+		"mfaRequired": "MFA is required",
+		"passwordExpired": "Password has expired: create a new password"
+	},
+	"genericError": "Generic error",
+	"mfa": {
+		"activated": "MFA activated successfully",
+		"alreadyActivated": "MFA already activated",
+		"alreadyDeactivated": "MFA already deactivated",
+		"deactivated": "MFA deactivated successfully",
+		"errorDeactivation": "Error during MFA deactivation",
+		"qrCodeError": "Error during MFA activation",
+		"wrongCode": "Incorrect confirmation code"
+	},
+	"userCreated": "User created successfully",
+	"userNotFound": "Server error: user not found",
+	"usernameAlreadyTaken": "Username or email already in use",
+	"verification": {
+		"confirmed": "Email verified successfully",
+		"email": "Account confirmation",
+		"emailHasBeenSent": "We have sent you a confirmation email. Check your email and enter the code you received",
+		"emailNotVerified": "This email has not been verified yet.",
+		"tooManyAttempts": "Too many emails sent: try again later. Check if the email address is correct or if the email has been moved to the spam folder.",
+		"wrongCode": "Incorrect confirmation code"
+	},
+	"wrongCredentials": "Incorrect credentials",
+	"serverError": "serverError"
 }
