@@ -1,56 +1,60 @@
 import { PermissionController } from "../controllers/permissionController";
+import { createPermissionRequest } from "../requests/createPermissionRequest";
+import { AuthController } from "../controllers/authController";
+import { addPermissionToUserRequest } from "../requests/addPermissionToUserRequest";
+import { checkPermissionMiddleware } from "../middlewares/checkPermission.middleware";
 
 export const permissionRoutes = (router: any, passport: any) => {
 
     router.get(
         '/permissions',
         passport.authenticate('jwt', { session: false }),
-        //     checkPermissionMiddleware('manage-roles'),
+        checkPermissionMiddleware('manage-permissions'),
         PermissionController.list
     );
-    /*
-        router.post(
-            '/',
-            passport.authenticate('jwt', { session: false }),
-            checkPermissionMiddleware('manage-roles'),
-            createRoleRequest,
-            AuthController.withValidation,
-            RoleController.create
-        );
 
-        router.put(
-            '/:id',
-            passport.authenticate('jwt', { session: false }),
-            checkPermissionMiddleware('manage-roles'),
-            updateRoleRequest,
-            AuthController.withValidation,
-            RoleController.update
-        );
+    router.post(
+        '/permissions',
+        passport.authenticate('jwt', { session: false }),
+        checkPermissionMiddleware('manage-permissions'),
+        createPermissionRequest,
+        AuthController.withValidation,
+        PermissionController.create
+    );
 
-        router.delete(
-            '/:id',
-            passport.authenticate('jwt', { session: false }),
-            checkPermissionMiddleware('manage-roles'),
-            RoleController.delete
-        );
+    router.put(
+        '/permissions/:id',
+        passport.authenticate('jwt', { session: false }),
+        checkPermissionMiddleware('manage-permissions'),
+        createPermissionRequest,
+        AuthController.withValidation,
+        PermissionController.update
+    );
 
-        router.post(
-            '/addRoleToUser',
-            passport.authenticate('jwt', { session: false }),
-            checkPermissionMiddleware('manage-roles'),
-            addRoleToUserRequest,
-            AuthController.withValidation,
-            RoleController.addRoleToUser
-        );
+    router.delete(
+        '/permissions/:id',
+        passport.authenticate('jwt', { session: false }),
+        checkPermissionMiddleware('manage-permissions'),
+        PermissionController.delete
+    );
 
-        router.post(
-            '/removeRoleFromUser',
-            passport.authenticate('jwt', { session: false }),
-            checkPermissionMiddleware('manage-roles'),
-            addRoleToUserRequest,
-            AuthController.withValidation,
-            RoleController.removeRoleFromUser)
-        ;*/
+    router.post(
+        '/permissions/addPermissionToUser',
+        passport.authenticate('jwt', { session: false }),
+        checkPermissionMiddleware('manage-permissions'),
+        addPermissionToUserRequest,
+        AuthController.withValidation,
+        PermissionController.addPermissionToUser
+    );
+
+    router.post(
+        '/permissions/removePermissionFromUser',
+        passport.authenticate('jwt', { session: false }),
+        checkPermissionMiddleware('manage-permissions'),
+        addPermissionToUserRequest,
+        AuthController.withValidation,
+        PermissionController.removePermissionFromUser)
+    ;
 
     return router;
 }

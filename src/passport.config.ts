@@ -22,9 +22,9 @@ const opts = {
 const initializePassport = () => {
     passport.use(
         new JwtStrategy(opts, async (jwt_payload, done) => {
-            console.log('jwt_payload', jwt_payload)
             try {
-                const cachedUser = await RedisCache.get(`user:${jwt_payload.id}`);
+                const key = `user:${jwt_payload.id}`;
+                const cachedUser = await RedisCache.get(key);
                 if ( cachedUser ) {
                     return done(null, JSON.parse(cachedUser));
                 }

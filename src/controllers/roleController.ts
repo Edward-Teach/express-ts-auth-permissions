@@ -112,6 +112,7 @@ export class RoleController extends Controller {
             })
             return res.status(201).json(response);
         } catch ( error ) {
+            await transaction.rollback();
             console.error(error);
             return res.status(400).json({ message: 'Bad Request' });
         }
