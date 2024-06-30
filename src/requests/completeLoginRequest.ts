@@ -1,13 +1,14 @@
-import {body} from 'express-validator';
+import { body } from 'express-validator';
 
 export const completeLoginRequest = [
-    body('key')
+    body('sessionId')
         .isString()
-        .notEmpty().withMessage('Key is required'),
-    body('response')
+        .notEmpty().withMessage('sessionId is required'),
+    body('processedChallenge')
         .isString()
-        .notEmpty().withMessage('Response is required'),
+        .notEmpty().withMessage('processedChallenge is required'),
     body('rememberMe')
         .isBoolean()
         .optional()
 ];
+

@@ -6,10 +6,10 @@ export interface IUser {
     email: string
     name: string
     password: string
-    verifier: string
-    mfaSecret?: string|null
-    emailVerifiedAt: string|null
+    salt: string
+    mfaSecret?: string | null
+    emailVerifiedAt: string | null
     passwordExpiresAt: string
-    roles?: string[]|IRole[]
-    permissions?: string[]|IPermission[]
+    roles?: string[] | IRole[]
+    permissions?: string[] | IPermission[]
 }

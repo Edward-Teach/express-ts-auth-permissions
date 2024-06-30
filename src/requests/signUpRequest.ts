@@ -1,4 +1,4 @@
-import {body} from 'express-validator';
+import { body } from 'express-validator';
 
 export const signUpRequest = [
     body('name')
@@ -7,4 +7,7 @@ export const signUpRequest = [
     body('email')
         .isEmail()
         .notEmpty().withMessage('Email is required'),
+    body('password')
+        .isString()
+        .notEmpty().withMessage('Password is required'),
 ];

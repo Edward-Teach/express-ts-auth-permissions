@@ -16,30 +16,13 @@ import { Role } from "../models/Role";
 import { Permission } from "../models/Permission";
 import { Response } from 'express';
 import { CustomRequest } from "../express";
+import { v4 as uuidv4 } from 'uuid';
+
 
 export class AuthController extends Controller {
 
-    /**
-     * Initializes the login process for a user.
-     *
-     * @param req - The request object containing the user's username.
-     * @param res - The response object to send the response back to the client.
-     *
-     * @returns A response object with a status code of 200 and the cache key, IV, challenge, and verifier.
-     *          If a user with the provided username does not exist, a response object with a status code of 400 and an error message is returned.
-     *
-     * @remarks
-     * This function generates a cache key, retrieves the user's information from the database,
-     * generates a challenge, and stores the user's ID, challenge, password, and IV in Redis.
-     * The IV, challenge, and verifier are then sent back to the client.
-     */
+
     static initLogin = async (req: CustomRequest, res: Response): Promise<Response> => {
-
-        const key: string = `challenge-${randomstring.generate({
-            charset: 'numeric',
-            length: 16
-        })}`
-
         const username: string = this.sanitizeString(req.body.username);
         const user: IUser | null = await User.findOne({
             where: {
@@ -49,155 +32,113 @@ export class AuthController extends Controller {
                 ]
             }
         });
-
-        const challenge = randomstring.generate({
-            charset: 'alphanumeric',
-            length: 64,
-        })
-        const iv = crypto.randomBytes(16); // IV should be 16 bytes for AES-256-CBC
-
+        const sessionId = uuidv4();
+        const challenge = randomstring.generate({ length: 32 });
+        const sessionKey = `challenge:${sessionId}`;
+        const iv = crypto.randomBytes(16).toString('hex'); // 128-bit IV in hex
 
         if ( user && user.password ) {
-            await RedisCache.set(key, JSON.stringify({
-                id: user.id,
+            await RedisCache.set(sessionKey, JSON.stringify({
+                email: user.email,
+                iv,
                 challenge,
                 password: user.password,
-                iv: iv.toString('hex')
-            }), 60 * 3); // 3 minutes
+                salt: user.salt
+            }), 300);
         }
 
         return res.send({
-            key,
-            iv: iv.toString('hex'),
+            iv,
+            sessionId,
             challenge,
-            verifier: user ? user.verifier : randomstring.generate({
-                charset: 'alphanumeric',
-                length: 128,
-            })
+            salt: user?.salt
         })
     }
 
-    /**
-     * Verifies the challenge response sent by the client.
-     *
-     * @param req - The request object containing the encrypted response and the key.
-     * @param res - The response object to send the response back to the client.
-     *
-     * @returns A response object with a status code of 200 and the authenticated user data if the verification is successful.
-     *          If the challenge is not found or the decryption fails, a response object with a status code of 400 and an error message is returned.
-     *
-     * @throws Will throw an error if the encrypted response is not a valid base64 string.
-     * @throws Will throw an error if the password is not a valid string.
-     * @throws Will throw an error if the initialization vector is not a valid Buffer.
-     *
-     * @remarks
-     * This function retrieves the cached challenge from Redis using the provided key.
-     * It then decrypts the encrypted response using the password and initialization vector from the cached challenge.
-     * If the decrypted response matches the challenge from the cached challenge, the user is retrieved from the database.
-     * If the user is not found, a generic wrong credentials error message is returned.
-     * If the user's email is not verified, an email not verified error message is returned.
-     * If the user's password has expired, a password expired error message is returned.
-     * If the user has MFA enabled, a MFA required error message is returned.
-     * If all checks pass, the user is returned in the response.
-     */
     static verifyChallenge = async (req: CustomRequest, res: Response): Promise<Response> => {
-        try {
-            const cachedChallenge = await RedisCache.get(req.body.key)
-            if ( !cachedChallenge ) {
-                return res.status(400).send({ message: i18n.__('wrongCredentials'), code: 'WRONG_CHALLENGE' });
-            }
-            const parsedCachedChallenge = JSON.parse(cachedChallenge);
-            await RedisCache.delete(req.body.key)
 
-            const decryptedMessage = this.decrypt(
-                req.body.response,
-                parsedCachedChallenge.password,
-                Buffer.from(parsedCachedChallenge.iv, 'hex')
-            );
+        const { sessionId, processedChallenge } = req.body;
 
-            if ( decryptedMessage === parsedCachedChallenge.challenge ) {
-                const user: IUser | null = await User.findOne({
-                    where: {
-                        id: parsedCachedChallenge.id
-                    },
-                    include: [
-                        {
-                            model: Role
-                        },
-                        {
-                            model: Permission
-                        }
-                    ]
-                });
-                if ( !user ) {
-                    // SECURITY Do not remove or change the return message
-                    // The user is not present,
-                    // but we send a generic wrong credentials
-                    // to prevent harvesting of email addresses.
-                    return res.status(400).send({ message: i18n.__('wrongCredentials'), code: 'WRONG_CHALLENGE-E' });
-                }
-
-                if ( !user.emailVerifiedAt ) {
-                    return res.status(200).send({
-                        lang: i18n.getLocale(),
-                        message: i18n.__('verification.emailNotVerified'),
-                        code: 'EMAIL_NOT_VERIFIED',
-                    });
-                }
-
-                const now = new Date();
-                const pwExpiration = user.passwordExpiresAt;
-                if ( isBefore(pwExpiration, now) ) {
-                    return res.status(200).send({
-                        message: i18n.__('auth.passwordExpired'),
-                        code: 'PASSWORD_EXPIRED',
-                    });
-                }
-
-                if ( user.mfaSecret ) {
-                    const key: string = `challenge-${randomstring.generate({
-                        charset: 'numeric',
-                        length: 16
-                    })}`
-                    await RedisCache.set(key, user.id!.toString(), 60 * 3); // 3 minutes
-                    return res.status(200).send({
-                        message: i18n.__('auth.mfaRequired'),
-                        key,
-                        code: 'MFA_REQUIRED',
-                    });
-                }
-                return this.returnAuthUser(req, res, user)
-            }
-        } catch ( e: any ) {
-            return res.status(400).send({
-                message: e.message,
-                code: 'INTERNAL_SERVER_ERROR',
-                key: req.body.key ?? 'no key provided'
-            });
+        const cachedChallenge = await RedisCache.get(`challenge:${sessionId}`)
+        if ( !cachedChallenge ) {
+            console.log('no cached challenge')
+            return res.status(400).send({ message: i18n.__('wrongCredentials'), code: 'WRONG_CHALLENGE' });
         }
+        await RedisCache.delete(sessionId)
+
+        // CACHE
+        const { email, challenge, password, iv, salt } = JSON.parse(cachedChallenge);
+
+
+        const encryptedMessage = this.encrypt(challenge, password, iv, salt);
+        console.log('expectedProcessedChallenge', encryptedMessage)
+        console.log('processedChallenge', processedChallenge)
+
+        if ( encryptedMessage === processedChallenge ) {
+            const user: IUser | null = await User.findOne({
+                where: {
+                    email
+                },
+                include: [
+                    {
+                        model: Role
+                    },
+                    {
+                        model: Permission
+                    }
+                ]
+            });
+            if ( !user ) {
+                // SECURITY Do not remove or change the return message
+                // The user is not present,
+                // but we send a generic wrong credentials
+                // to prevent harvesting of email addresses.
+                return res.status(400).send({ message: i18n.__('wrongCredentials'), code: 'WRONG_CHALLENGE-E' });
+            }
+
+            if ( !user.emailVerifiedAt ) {
+                return res.status(200).send({
+                    lang: i18n.getLocale(),
+                    message: i18n.__('verification.emailNotVerified'),
+                    code: 'EMAIL_NOT_VERIFIED',
+                });
+            }
+
+            const now = new Date();
+            const pwExpiration = user.passwordExpiresAt;
+            if ( isBefore(pwExpiration, now) ) {
+                return res.status(200).send({
+                    message: i18n.__('auth.passwordExpired'),
+                    code: 'PASSWORD_EXPIRED',
+                });
+            }
+
+            if ( user.mfaSecret ) {
+                const key: string = `challenge-${randomstring.generate({
+                    charset: 'numeric',
+                    length: 16
+                })}`
+                await RedisCache.set(key, user.id!.toString(), 60 * 3); // 3 minutes
+                return res.status(200).send({
+                    message: i18n.__('auth.mfaRequired'),
+                    key,
+                    code: 'MFA_REQUIRED',
+                });
+            }
+            return this.returnAuthUser(req, res, user)
+        }
+
         return res.status(400).send({ message: i18n.__('wrongCredentials'), code: 'WRONG_CHALLENGE-E' });
     }
 
-    /**
-     * Initializes the registration process for a new user.
-     *
-     * @param req - The request object containing the user's name and email.
-     * @param res - The response object to send the response back to the client.
-     *
-     * @returns A response object with a status code of 200 and the cache key, public key, and random string to crypt.
-     *          If a user with the same name or email already exists, a response object with a status code of 400 and an error message is returned.
-     *
-     * @remarks
-     * This function generates a cache key, creates an RSA key pair, and stores the user's name, email, private key, and random string to crypt in Redis.
-     * The public key and random string to crypt are then sent back to the client.
-     */
-    static initRegistration = async (req: CustomRequest, res: Response): Promise<Response> => {
+    static register = async (req: CustomRequest, res: Response): Promise<Response> => {
 
         const name: string = this.sanitizeString(req.body.name);
         const email: string = this.sanitizeString(req.body.email);
+        const password: string = req.body.password;
 
         // Check if a user with the same name or email already exists
-        const user: IUser | null = await User.findOne({
+        let user: IUser | null = await User.findOne({
             where: {
                 [Op.or]: [
                     { email: { [Op.eq]: email } },
@@ -210,110 +151,28 @@ export class AuthController extends Controller {
             return res.status(400).send({ message: i18n.__('usernameAlreadyTaken'), code: 'USERNAME_ALREADY_TAKEN' });
         }
 
-        // Generate a cache key
-        const cacheKey = randomstring.generate({
-            readable: true,
-            charset: 'numeric',
-            length: 12,
-        })
+        const salt = crypto.randomBytes(16).toString('hex');
+        const hash = crypto.pbkdf2Sync(
+            password,
+            Buffer.from(salt, 'hex'),
+            10000,
+            32,
+            'sha512'
+        ).toString('hex')
+        const now = new Date();
+        const pwExpiration = addMonths(now, 1);
 
-        // Generate an RSA key pair
-        const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', {
-            modulusLength: 2048,
-        });
-
-        // Generate a random string to crypt
-        const randomStringToCrypt = randomstring.generate({
-            charset: 'alphanumeric',
-            length: 128,
-        })
-
-        // Store the user's data in Redis
-        await RedisCache.set(`init-register--${cacheKey}`, JSON.stringify({
+        user = await UserService.createUser({
             name,
             email,
-            privateKey: privateKey.export({
-                type: 'pkcs1',
-                format: 'pem'
-            }),
-            randomStringToCrypt
-        }), 60 * 3); // 3 minutes
+            password: hash,
+            salt,
+            passwordExpiresAt: pwExpiration,
+        })
 
-        // Send the public key, random string to crypt, and cache key back to the client
-        return res.status(200).send({
-            cacheKey,
-            publicKey: publicKey.export({
-                type: 'spki',
-                format: 'pem'
-            }),
-            randomStringToCrypt
-        });
+        return res.json({ user });
     }
 
-    /**
-     * Completes the registration process for a new user.
-     *
-     * @param req - The request object containing the user's data and chunks of encrypted random string.
-     * @param res - The response object to send the response back to the client.
-     *
-     * @returns A response object with a status code of 201 and a success message if the registration is completed successfully.
-     *          If the cache key is not found or the decryption fails, a response object with a status code of 400 and an error message is returned.
-     *
-     * @remarks
-     * This function retrieves the user's data from Redis using the provided cache key.
-     * It then creates a private key from the stored private key string.
-     * The chunks of encrypted random string are decrypted using the private key.
-     * The decrypted random strings are concatenated to form the full random string.
-     * The user's data, including the decrypted random string, is used to create a new user in the database.
-     * The cache key is then deleted from Redis.
-     *
-     * @throws Will throw an error if the cache key is not found or the decryption fails.
-     */
-    static completeRegistration = async (req: CustomRequest, res: Response): Promise<Response> => {
-        const key = `init-register--${req.body.key}`;
-        const tempUserStr = await RedisCache.get(key)
-        if ( !tempUserStr ) {
-            return res.status(400).send({ message: i18n.__('genericError'), code: 'INTERNAL_SERVER_ERROR' });
-        }
-        await RedisCache.delete(key)
-
-        const tempUser: any = JSON.parse(tempUserStr);
-
-        const privateKey = crypto.createPrivateKey({
-            key: tempUser.privateKey,
-            format: 'pem',
-            type: 'pkcs1',
-        });
-
-        try {
-            let verifier = '';
-            for ( let k = 0; k < req.body.chunks.length; k += 1 ) {
-                const ersb = Buffer.from(req.body.chunks[k], 'base64');
-                const decryptedRandomStringBuffer = crypto.privateDecrypt(
-                    {
-                        key: privateKey,
-                    },
-                    ersb
-                )
-                verifier += decryptedRandomStringBuffer.toString('utf8');
-            }
-
-            const now = new Date();
-            const pwExpiration = addMonths(now, 1);
-
-            await UserService.createUser({
-                name: tempUser.name,
-                email: tempUser.email,
-                password: tempUser.randomStringToCrypt,
-                passwordExpiresAt: pwExpiration,
-                verifier
-            })
-
-            return res.status(201).send({ message: i18n.__('userCreated'), code: 'USER_CREATED' });
-        } catch ( e: any ) {
-            return res.status(400).send({ message: e.message, code: 'INTERNAL_SERVER_ERROR' });
-        }
-    }
 
     /**
      * Verifies the email of a user.
@@ -562,39 +421,26 @@ export class AuthController extends Controller {
 
 
     //  ------------------------------------------ PRIVATE ------------------------------------------
-    /**
-     * Decrypts a given encrypted text using AES-256-CBC algorithm.
-     *
-     * @param encryptedText - The encrypted text to decrypt.
-     * @param password - The password used to generate the encryption key.
-     * @param iv - The initialization vector used in the encryption process.
-     *
-     * @returns The decrypted text as a UTF-8 string, or null if decryption fails.
-     *
-     * @throws Will throw an error if the encrypted text is not a valid base64 string.
-     * @throws Will throw an error if the password is not a valid string.
-     * @throws Will throw an error if the initialization vector is not a valid Buffer.
-     *
-     * @remarks
-     * This function uses the provided password to generate a 32-byte key using SHA-256.
-     * It then creates a decipher object using the generated key and the provided initialization vector.
-     * The encrypted text is decrypted using the decipher object, and the decrypted bytes are concatenated.
-     * The decrypted bytes are then converted to a UTF-8 string and returned.
-     * If decryption fails, null is returned.
-     */
-    private static decrypt = (encryptedText: string, password: string, iv: Buffer): null | string => {
-        const key = crypto.createHash('sha256').update(password).digest(); // Ensure key is 32 bytes for AES-256
-        const encryptedBuffer = Buffer.from(encryptedText, 'base64'); // Convert from base64 to Buffer
-        const decipher = crypto.createDecipheriv('aes-256-cbc', key, iv);
-        decipher.setAutoPadding(true); // Ensure auto padding is enabled for PKCS#7
-        let decrypted;
-        try {
-            decrypted = decipher.update(encryptedBuffer);
-            decrypted = Buffer.concat([decrypted, decipher.final()]);
-        } catch ( err ) {
-            return null;
-        }
-        return decrypted.toString('utf-8');
+    private static deriveKeyNode(password: string, salt: string): Buffer {
+        return crypto.pbkdf2Sync(password, Buffer.from(salt, 'hex'), 10000, 32, 'sha512');
+    }
+
+    private static encrypt(text: string, password: string, ivHex: string, salt: string) {
+        const algorithm = 'aes-256-cbc';
+        const iv = Buffer.from(ivHex, 'hex');
+
+        const derivedKey = Buffer.from(password, 'hex');
+        //const derivedKey = this.deriveKeyNode(password, salt);
+
+        console.log('derivedKeyHex', derivedKey.toString('hex'));
+        console.log('text', text);
+        console.log('ivHex', ivHex);
+
+        const cipher = crypto.createCipheriv(algorithm, derivedKey, iv);
+        let encrypted = cipher.update(text, 'utf8', 'hex');
+        encrypted += cipher.final('hex');
+
+        return encrypted;
     }
 
     /**

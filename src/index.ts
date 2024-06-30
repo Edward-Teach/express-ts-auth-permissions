@@ -13,6 +13,7 @@ import { authRoutes } from "./routes/auth";
 import { checkPermissionMiddleware } from "./middlewares/checkPermission.middleware";
 import { roleRoutes } from "./routes/role";
 import { permissionRoutes } from "./routes/permission";
+import cors from 'cors';
 
 dotenv.config();
 
@@ -21,6 +22,8 @@ export const sesClient = initializeSESClient();
 export const i18n = initializeI18n();
 export const passport = initializePassport();
 const app: Express = express();
+app.set('trust proxy', 1);
+
 const router = express.Router();
 
 // Initialize Redis once at application start
@@ -33,6 +36,7 @@ const router = express.Router();
 
     const limiter = createRateLimiter();
     // middlewares
+    app.use(cors())
     app.use(express.json());
     app.use(i18n.init)
     app.use(limiter)

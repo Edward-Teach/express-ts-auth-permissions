@@ -1,5 +1,5 @@
-import { Table, Column, DataType, Unique, HasMany, BelongsToMany, Model } from 'sequelize-typescript';
-import {IUser} from "../interfaces/IUser";
+import { BelongsToMany, Column, DataType, HasMany, Model, Table, Unique } from 'sequelize-typescript';
+import { IUser } from "../interfaces/IUser";
 import { format } from 'date-fns';
 import { UserRole } from "./UserRole";
 import { Role } from "./Role";
@@ -37,7 +37,7 @@ export class User extends Model<User> implements IUser {
         type: DataType.STRING,
         allowNull: false,
         validate: {
-            notNull: {msg: 'username is required'}
+            notNull: { msg: 'username is required' }
         }
     })
     declare name: string;
@@ -57,7 +57,7 @@ export class User extends Model<User> implements IUser {
         type: DataType.STRING,
         allowNull: false,
         validate: {
-            notNull: {msg: 'email is required'}
+            notNull: { msg: 'email is required' }
         }
     })
     declare email: string;
@@ -73,26 +73,19 @@ export class User extends Model<User> implements IUser {
         type: DataType.STRING,
         allowNull: false,
         validate: {
-            notNull: {msg: 'Password is required'}
+            notNull: { msg: 'Password is required' }
         }
     })
     declare password: string;
 
-    /**
-     * Verifier of the user.
-     *
-     * @remarks
-     * This field is required.
-     * A validation message is displayed if the verifier is not provided.
-     */
     @Column({
         type: DataType.STRING,
         allowNull: false,
         validate: {
-            notNull: {msg: 'Verifier is required'}
+            notNull: { msg: 'Salt is required' }
         }
     })
-    declare verifier: string;
+    declare salt: string;
 
     /**
      * MFA secret of the user.
@@ -104,7 +97,7 @@ export class User extends Model<User> implements IUser {
         type: DataType.STRING,
         allowNull: true,
     })
-    declare mfaSecret: string|null;
+    declare mfaSecret: string | null;
 
     /**
      * Email verification date of the user.
@@ -129,7 +122,14 @@ export class User extends Model<User> implements IUser {
         allowNull: false
     })
     declare passwordExpiresAt: string;
-
+    @HasMany(() => UserRole)
+    userRoles!: UserRole[];
+    @BelongsToMany(() => Role, () => UserRole)
+    roles!: Role[];
+    @HasMany(() => UserPermission)
+    userPermissions!: UserPermission[];
+    @BelongsToMany(() => Permission, () => UserPermission)
+    permissions!: Permission[];
 
     /**
      * Custom toJSON method to exclude sensitive fields.
@@ -144,27 +144,15 @@ export class User extends Model<User> implements IUser {
     toJSON(): object {
         //return this.get();
         const obj = this.get();
-        const values : any = { };
+        const values: any = {};
         values.id = this.id;
         values.name = this.name;
         values.email = this.email;
-        if (this.passwordExpiresAt) {
+        if ( this.passwordExpiresAt ) {
             values.passwordExpiresAt = format(this.passwordExpiresAt, 'yyyy-MM-dd HH:mm:ss');
         }
         values.roles = obj.roles;
-        values.permissions = obj.permissions.map((p: Permission)=> p.name);
+        values.permissions = obj.permissions?.map((p: Permission) => p.name);
         return values;
     }
-
-    @HasMany(() => UserRole)
-    userRoles!: UserRole[];
-
-    @BelongsToMany(() => Role, () => UserRole)
-    roles!: Role[];
-
-    @HasMany(() => UserPermission)
-    userPermissions!: UserPermission[];
-
-    @BelongsToMany(() => Permission, () => UserPermission)
-    permissions!: Permission[];
 }

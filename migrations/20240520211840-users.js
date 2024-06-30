@@ -1,10 +1,10 @@
 'use strict';
 
-const {DataTypes} = require("sequelize");
+const { DataTypes } = require( "sequelize" );
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
-    async up(queryInterface, Sequelize) {
-        await queryInterface.createTable('users', {
+    async up( queryInterface, Sequelize ) {
+        await queryInterface.createTable( 'users', {
             id: {
                 type: DataTypes.INTEGER,
                 primaryKey: true,
@@ -25,8 +25,8 @@ module.exports = {
                 type: DataTypes.STRING,
                 allowNull: false,
             },
-            verifier: {
-                type: DataTypes.TEXT,
+            salt: {
+                type: DataTypes.STRING,
                 allowNull: false,
             },
             mfaSecret: {
@@ -53,10 +53,10 @@ module.exports = {
                 allowNull: false,
                 defaultValue: DataTypes.NOW,
             },
-        });
+        } );
     },
 
-    async down(queryInterface, Sequelize) {
-        await queryInterface.dropTable('users');
+    async down( queryInterface, Sequelize ) {
+        await queryInterface.dropTable( 'users' );
     }
 };

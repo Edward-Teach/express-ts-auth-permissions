@@ -2,12 +2,15 @@
   "dependencies": {
     "@aws-sdk/client-ses": "^3.577.0",
     "@aws-sdk/credential-provider-node": "^3.577.0",
+    "@types/cors": "^2.8.17",
     "@types/date-fns": "^2.6.0",
     "@types/express-rate-limit": "^6.0.0",
     "@types/qrcode": "^1.5.5",
     "@types/rate-limit-redis": "^3.0.0",
     "@types/speakeasy": "^2.0.10",
+    "@types/uuid": "^10.0.0",
     "body-parser": "^1.20.2",
+    "cors": "^2.8.5",
     "date-fns": "^3.6.0",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
@@ -27,7 +30,8 @@
     "sequelize": "^6.37.3",
     "sequelize-cli": "^6.6.2",
     "sequelize-typescript": "^2.1.6",
-    "speakeasy": "^2.0.0"
+    "speakeasy": "^2.0.0",
+    "uuid": "^10.0.0"
   },
   "name": "phb",
   "version": "1.0.0",

@@ -1,7 +1,6 @@
 import { AuthController } from "../controllers/authController";
 import { initLoginRequest } from "../requests/initLoginRequest";
 import { signUpRequest } from "../requests/signUpRequest";
-import { completeSignUpRequest } from "../requests/completeSignUpRequest";
 import { completeLoginRequest } from "../requests/completeLoginRequest";
 import { sendVerificationEmailRequest } from "../requests/sendVerificationEmailRequest";
 import { verifyEmailRequest } from "../requests/verifyEmailRequest";
@@ -29,14 +28,7 @@ export const authRoutes = (router: any, passport: any) => {
         '/register',
         signUpRequest,
         AuthController.withValidation,
-        AuthController.initRegistration
-    );
-
-    router.post(
-        '/completeRegistration',
-        completeSignUpRequest,
-        AuthController.withValidation,
-        AuthController.completeRegistration
+        AuthController.register
     );
 
     router.post(
